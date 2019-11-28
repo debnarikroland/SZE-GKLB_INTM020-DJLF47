@@ -30,6 +30,33 @@ pinMode(24, OUTPUT);
 pinMode(26, OUTPUT);
 pinMode(28, OUTPUT);
 pinMode(30, INPUT);
+
+Serial.println("Initialize Ethernet with DHCP:");
+  if (Ethernet.begin(mac) == 0) 
+  {
+    Serial.println("Failed to configure Ethernet using DHCP");
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) 
+	{
+      Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+      while (true) 
+	  {
+        delay(1);
+      }
+    }
+    if (Ethernet.linkStatus() == LinkOFF) 
+	{
+      Serial.println("Ethernet cable is not connected.");
+    }
+    Ethernet.begin(mac, ip, myDns);
+    Serial.print("My IP address: ");
+    Serial.println(Ethernet.localIP());
+  } 
+  else 
+  {
+    Serial.print("  DHCP assigned IP ");
+    Serial.println(Ethernet.localIP());
+  }
+  delay(8000);
 }
 
 void loop() 
