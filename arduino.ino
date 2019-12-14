@@ -1,24 +1,42 @@
+/*
+ * Debnárik Roland József
+ * Széchenyi István Egyetem
+ * Mikorelektromechanikai rendszerek
+ * GKLB_INTM020
+ * Távoli megfigyelés és vezérlés
+ */
+
+
+/*Könyvtárak*/
 #include <DHT.h>
 #include <SPI.h>
 #include <Ethernet.h>
+/*----------*/
+
+/*MAC, IP és komminukációs szerver beállítása*/
 byte mac[] = {  0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xAB};
 IPAddress ip(192, 168, 137, 200);
 IPAddress myDns(192, 168, 137, 1);
 char server[] = "www.gklb.intm020.debnarik.com";
 EthernetClient client;
+/*---------------------------------------------*/
 
-unsigned long lastConnectionTime = 0;
-const unsigned long postingInterval = 10*1000;
+/*Webserveres kérések között eltelt időre változók definiálása*/
+unsigned long lastConnectionTime = 0;           // last time you connected to the server, in milliseconds
+const unsigned long postingInterval = 10*1000;  // delay between updates, in milliseconds
+/*---------------------------------------------------------------*/
 
+/*DH11-es PIN megdasá és hőmérő típus megadása*/
 #define DHTPIN 2
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
-
+/*-------------------------------------------*/
+/*Változók*/
 long previousMillis = 0;
 unsigned long currentMillis = 0;
-long interval = 250000; 
-int t = 0;
-int h = 0;
+long interval = 250000;
+int t = 0; 
+int h = 0; 
 String data;
 String erzekeles = "";
 String homerseklet = "";
@@ -30,55 +48,75 @@ boolean hall = false;
 String html = "";
 int val;
 int iState;
+int hallLed = 24;
+int kitchen = 26;
+int bathroom = 28;
+int bedroom = 30;
+int pirSensor = 32;
+/*-------*/
 
 
-void setup() 
-{
+void setup() {
+
 dht.begin(); 
 h = (int) dht.readHumidity(); 
 t = (int) dht.readTemperature(); 
 String data = "";
+/// SD kártya letíltása
 pinMode(4, OUTPUT);
 digitalWrite(4, HIGH);
-pinMode(24, OUTPUT);
-pinMode(26, OUTPUT);
-pinMode(28, OUTPUT);
-pinMode(30, INPUT);
+///------------------------///
 
-Serial.println("Initialize Ethernet with DHCP:");
-  if (Ethernet.begin(mac) == 0) 
-  {
+pinMode(hallLed, OUTPUT);
+pinMode(kitchen, OUTPUT);
+pinMode(bathroom, OUTPUT);
+pinMode(bedroom, OUTPUT);
+pinMode(pirSensor, INPUT);
+
+ /* Serial.begin(9600);
+  while (!Serial) {
+    ;
+  }*/
+
+  Serial.println("Initialize Ethernet with DHCP:");
+  if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
-    if (Ethernet.hardwareStatus() == EthernetNoHardware) 
-	{
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
       Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
-      while (true) 
-	  {
+      while (true) {
         delay(1);
       }
     }
-    if (Ethernet.linkStatus() == LinkOFF) 
-	{
+    if (Ethernet.linkStatus() == LinkOFF) {
       Serial.println("Ethernet cable is not connected.");
     }
     Ethernet.begin(mac, ip, myDns);
     Serial.print("My IP address: ");
     Serial.println(Ethernet.localIP());
-  } 
-  else 
-  {
+  } else {
     Serial.print("  DHCP assigned IP ");
     Serial.println(Ethernet.localIP());
   }
   delay(8000);
+
 }
 
 void loop() 
 {
-if(i < 15)
+  if (client.available()) {
+    html = "";
+    while(client.available())
+    {
+      char c = client.read();
+      html = html + c;
+      Serial.print(c);
+    }
+  }
+
+  if(i < 15)
   {
     Serial.println("I erteke: " + i);
-    val = digitalRead(30);
+    val = digitalRead(pirSensor);
     if(val == HIGH)
     {
       i = 49;
@@ -88,29 +126,46 @@ if(i < 15)
     {
       if(html.indexOf("hall:on") > 0)
       {
-        digitalWrite(24, HIGH);
+        digitalWrite(hallLed, HIGH);
+        Serial.println ("felkapcsolas");
       }
       else
       {
-        digitalWrite(24,LOW);
+        digitalWrite(hallLed,LOW);
+        Serial.println ("lekapcsolas");
       }
       
       if(html.indexOf("kitchen:on") > 0)
       {
-        digitalWrite(26, HIGH);
+        digitalWrite(kitchen, HIGH);
+        Serial.println ("felkapcsolas");
       }
       else
       {
-        digitalWrite(26,LOW);
+        digitalWrite(kitchen,LOW);
+        Serial.println ("lekapcsolas");
       }
     
       if(html.indexOf("bathroom:on") > 0)
       {
-        digitalWrite(28, HIGH);
+        digitalWrite(bathroom, HIGH);
+        Serial.println ("felkapcsolas");
       }
       else
       {
-        digitalWrite(28,LOW);
+        digitalWrite(bathroom,LOW);
+        Serial.println ("lekapcsolas");
+      }
+
+      if(html.indexOf("bedroom:on") > 0)
+      {
+        digitalWrite(bedroom, HIGH);
+        Serial.println ("felkapcsolas");
+      }
+      else
+      {
+        digitalWrite(bedroom,LOW);
+        Serial.println ("lekapcsolas");
       }
     }
     
@@ -128,6 +183,7 @@ if(i < 15)
   }
   else
   {
+    Serial.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx");
     homerseklet = "";
     paratartalom = "";
   
@@ -141,8 +197,8 @@ if(i < 15)
     
     i = 0;
   }
-
 }
+
 
 void httpRequestHomerseklet() {
   client.stop();
@@ -160,3 +216,4 @@ void httpRequestHomerseklet() {
     void(* resetFunc) (void) = 0;
   }
 }
+
